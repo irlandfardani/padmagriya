@@ -813,7 +813,7 @@
 // ─── Map init ─────────────────────────────────────────────
 const map = L.map('map', {
   center: [-6.9768214917184, 107.64620],   // centroid Padmagriya
-  zoom: 19,
+  zoom: 20,
   zoomControl: true,
   attributionControl: true,
 });
@@ -878,8 +878,8 @@ const basemaps = {
 };
 
 // Start with satellite
-basemaps.satellite.layer.addTo(map);
-let currentBase = 'satellite';
+basemaps.cartoLight.layer.addTo(map);
+let currentBase = 'cartoLight';
 let clusterOn = false;
 
 // Build basemap picker UI (called after DOM ready)
