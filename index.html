@@ -1277,6 +1277,7 @@ function toggleBasemap(which) {
     document.getElementById('sw-osm').classList.add('off');
   }
   currentBase = which;
+  syncDrawerToggles();
 }
 
 function toggleCluster() {
@@ -1396,12 +1397,6 @@ function filterMarkersMobile() {
   filterMarkers();
 }
 
-// Keep drawer basemap toggles in sync with desktop
-const _origToggleBasemap = toggleBasemap;
-function toggleBasemap(which) {
-  _origToggleBasemap(which);
-  syncDrawerToggles();
-}
 </script>
 
 </body>
