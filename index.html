@@ -352,7 +352,48 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ─── Mobile FAB: Hamburger Button ──────────────────────── */
+    /* ─── Basemap Picker ─────────────────────────────────────── */
+    .basemap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+    .basemap-btn {
+      position: relative;
+      border: 2px solid var(--sand);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: pointer;
+      aspect-ratio: 16/9;
+      background: var(--cream);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .basemap-btn:hover { border-color: var(--taupe); box-shadow: var(--shadow-sm); }
+    .basemap-btn.active {
+      border-color: var(--rust);
+      box-shadow: 0 0 0 1px var(--rust);
+    }
+    .basemap-btn-preview {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    .basemap-btn-label {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(45,36,32,.62);
+      color: white;
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: .3px;
+      text-align: center;
+      padding: 3px 4px;
+      backdrop-filter: blur(3px);
+    }
+    .basemap-btn.active .basemap-btn-label {
+      background: rgba(192,107,74,.85);
+    }
     .fab-menu {
       display: none;
       position: fixed;
@@ -629,27 +670,17 @@
 
     <!-- Layers -->
     <div class="sidebar-section">
-      <div class="section-label">Layer Peta</div>
-      <div class="layer-toggle" onclick="toggleBasemap('osm')">
-        <div class="layer-toggle-left">
-          <span class="layer-icon">🗺</span>
-          <span>OpenStreetMap</span>
+      <div class="section-label">Basemap</div>
+      <div class="basemap-grid" id="basemap-grid-desktop"></div>
+      <div style="margin-top:12px;">
+        <div class="section-label" style="margin-bottom:8px;">Opsi Tampilan</div>
+        <div class="layer-toggle" onclick="toggleCluster()">
+          <div class="layer-toggle-left">
+            <span class="layer-icon">📍</span>
+            <span>Cluster Markers</span>
+          </div>
+          <div class="toggle-switch off" id="sw-cluster"></div>
         </div>
-        <div class="toggle-switch off" id="sw-osm"></div>
-      </div>
-      <div class="layer-toggle" onclick="toggleBasemap('satellite')">
-        <div class="layer-toggle-left">
-          <span class="layer-icon">🛰</span>
-          <span>Satellite</span>
-        </div>
-        <div class="toggle-switch" id="sw-satellite"></div>
-      </div>
-      <div class="layer-toggle" onclick="toggleCluster()">
-        <div class="layer-toggle-left">
-          <span class="layer-icon">📍</span>
-          <span>Cluster Markers</span>
-        </div>
-        <div class="toggle-switch off" id="sw-cluster"></div>
       </div>
     </div>
 
@@ -746,18 +777,14 @@
 
       <!-- Layers -->
       <div class="sidebar-section">
-        <div class="section-label">Layer Peta</div>
-        <div class="layer-toggle" onclick="toggleBasemap('osm')">
-          <div class="layer-toggle-left"><span class="layer-icon">🗺</span><span>OpenStreetMap</span></div>
-          <div class="toggle-switch off" id="d-sw-osm"></div>
-        </div>
-        <div class="layer-toggle" onclick="toggleBasemap('satellite')">
-          <div class="layer-toggle-left"><span class="layer-icon">🛰</span><span>Satellite</span></div>
-          <div class="toggle-switch" id="d-sw-satellite"></div>
-        </div>
-        <div class="layer-toggle" onclick="toggleCluster()">
-          <div class="layer-toggle-left"><span class="layer-icon">📍</span><span>Cluster Markers</span></div>
-          <div class="toggle-switch off" id="d-sw-cluster"></div>
+        <div class="section-label">Basemap</div>
+        <div class="basemap-grid" id="basemap-grid-drawer"></div>
+        <div style="margin-top:12px;">
+          <div class="section-label" style="margin-bottom:8px;">Opsi Tampilan</div>
+          <div class="layer-toggle" onclick="toggleCluster()">
+            <div class="layer-toggle-left"><span class="layer-icon">📍</span><span>Cluster Markers</span></div>
+            <div class="toggle-switch off" id="d-sw-cluster"></div>
+          </div>
         </div>
       </div>
 
@@ -791,19 +818,89 @@ const map = L.map('map', {
   attributionControl: true,
 });
 
-// Basemap layers
-const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  maxZoom: 19,
-});
-const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
-  maxZoom: 19,
-});
 
-satelliteLayer.addTo(map);
+// ─── Basemap definitions (all HTTPS, safe for GitHub Pages) ──
+const basemaps = {
+  satellite: {
+    label: 'Satellite',
+    emoji: '🛰',
+    layer: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+      maxZoom: 19,
+    }),
+    preview: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/15/16378/26217',
+  },
+  osm: {
+    label: 'OpenStreetMap',
+    emoji: '🗺',
+    layer: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }),
+    preview: 'https://tile.openstreetmap.org/15/26217/16378.png',
+  },
+  topo: {
+    label: 'Topo',
+    emoji: '⛰',
+    layer: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)',
+      maxZoom: 17,
+    }),
+    preview: 'https://a.tile.opentopomap.org/15/26217/16378.png',
+  },
+  cartoLight: {
+    label: 'Carto Light',
+    emoji: '☀',
+    layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 20,
+    }),
+    preview: 'https://a.basemaps.cartocdn.com/light_all/15/26217/16378.png',
+  },
+  cartoDark: {
+    label: 'Carto Dark',
+    emoji: '🌙',
+    layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 20,
+    }),
+    preview: 'https://a.basemaps.cartocdn.com/dark_all/15/26217/16378.png',
+  },
+  humanitarian: {
+    label: 'Humanitarian',
+    emoji: '❤',
+    layer: L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
+      maxZoom: 19,
+    }),
+    preview: 'https://a.tile.openstreetmap.fr/hot/15/26217/16378.png',
+  },
+};
+
+// Start with satellite
+basemaps.satellite.layer.addTo(map);
 let currentBase = 'satellite';
 let clusterOn = false;
+
+// Build basemap picker UI (called after DOM ready)
+function buildBasemapPicker() {
+  ['basemap-grid-desktop', 'basemap-grid-drawer'].forEach(containerId => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    Object.entries(basemaps).forEach(([key, bm]) => {
+      const btn = document.createElement('div');
+      btn.className = 'basemap-btn' + (key === currentBase ? ' active' : '');
+      btn.id = `bm-btn-${containerId}-${key}`;
+      btn.innerHTML = `
+        <img class="basemap-btn-preview" src="${bm.preview}" onerror="this.style.display='none'" loading="lazy" />
+        <div class="basemap-btn-label">${bm.emoji} ${bm.label}</div>
+      `;
+      btn.onclick = () => toggleBasemap(key);
+      container.appendChild(btn);
+    });
+  });
+}
 
 // ─── Data ─────────────────────────────────────────────────
 // ⚠  PASTE YOUR ClusterPadmagriya_2.js DATA HERE
@@ -1239,6 +1336,9 @@ document.getElementById('stat-pct').textContent     = pct + '%';
 document.getElementById('cnt-anggota').textContent  = nAnggota;
 document.getElementById('cnt-bukan').textContent    = nBukan;
 
+// Build basemap picker buttons
+buildBasemapPicker();
+
 // Fit map to data
 if (wardaData.length) {
   const bounds = L.latLngBounds(wardaData.map(d => [d.lat, d.lng]));
@@ -1267,17 +1367,18 @@ function toggleLayer(which) {
 
 function toggleBasemap(which) {
   if (currentBase === which) return;
-  if (which === 'osm') {
-    map.removeLayer(satelliteLayer); map.addLayer(osmLayer);
-    document.getElementById('sw-osm').classList.remove('off');
-    document.getElementById('sw-satellite').classList.add('off');
-  } else {
-    map.removeLayer(osmLayer); map.addLayer(satelliteLayer);
-    document.getElementById('sw-satellite').classList.remove('off');
-    document.getElementById('sw-osm').classList.add('off');
-  }
+  // Remove current basemap
+  basemaps[currentBase].layer.removeFrom(map);
+  // Add new basemap
+  basemaps[which].layer.addTo(map);
+  // Bring markers on top
+  allMarkers.forEach(m => { try { m.bringToFront(); } catch(e){} });
   currentBase = which;
-  syncDrawerToggles();
+  // Update all picker buttons in both desktop + drawer
+  document.querySelectorAll('.basemap-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.id.endsWith(`-${which}`));
+  });
+  showToast(`Basemap: ${basemaps[which].label}`);
 }
 
 function toggleCluster() {
@@ -1286,12 +1387,10 @@ function toggleCluster() {
   sw.classList.toggle('off', !clusterOn);
 
   if (clusterOn) {
-    // Remove individual markers, add cluster groups (respecting layer visibility)
     allMarkers.forEach(m => map.removeLayer(m));
     if (layerState.anggota) map.addLayer(clusterAnggota);
     if (layerState.bukan)   map.addLayer(clusterBukan);
   } else {
-    // Remove cluster groups, add individual markers (respecting layer visibility)
     map.removeLayer(clusterAnggota);
     map.removeLayer(clusterBukan);
     allMarkers.forEach(m => {
@@ -1299,6 +1398,7 @@ function toggleCluster() {
       if (vis) map.addLayer(m);
     });
   }
+  syncDrawerToggles();
   showToast(clusterOn ? 'Cluster aktif' : 'Cluster nonaktif');
 }
 
@@ -1370,12 +1470,9 @@ function syncDrawerLegend() {
 }
 
 function syncDrawerToggles() {
-  ['osm','satellite','cluster'].forEach(id => {
-    const src  = document.getElementById(`sw-${id}`);
-    const dest = document.getElementById(`d-sw-${id}`);
-    if (!src || !dest) return;
-    dest.className = src.className;
-  });
+  const src  = document.getElementById('sw-cluster');
+  const dest = document.getElementById('d-sw-cluster');
+  if (src && dest) dest.className = src.className;
 }
 
 // ─── Mobile: Search ───────────────────────────────────────
