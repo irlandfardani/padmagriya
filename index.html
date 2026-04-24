@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peta Cluster Padmagriya</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── CSS Variables ─────────────────────────────────── */
+    :root {
+      --cream:     #F7F3EE;
+      --sand:      #EDE5D8;
+      --taupe:     #C9B99A;
+      --warm-brown:#8B6F5C;
+      --rust:      #C06B4A;
+      --sage:      #7A9E8E;
+      --sky:       #6B9FB5;
+      --plum:      #7C6B8A;
+      --text-dark: #2D2420;
+      --text-mid:  #5C4E45;
+      --text-light:#9E8E82;
+      --white:     #FFFFFF;
+      --shadow-sm: 0 2px 8px rgba(45,36,32,.08);
+      --shadow-md: 0 4px 20px rgba(45,36,32,.12);
+      --shadow-lg: 0 8px 40px rgba(45,36,32,.16);
+      --radius:    12px;
+      --radius-sm: 8px;
+    }
+
+    /* ─── Reset & Base ──────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text-dark); overflow: hidden; }
+
+    /* ─── Layout ─────────────────────────────────────────── */
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      grid-template-columns: 300px 1fr;
+      grid-template-areas:
+        "header header"
+        "sidebar map";
+      height: 100vh;
+    }
+
+    /* ─── Header ─────────────────────────────────────────── */
+    .header {
+      grid-area: header;
+      background: var(--white);
+      border-bottom: 1.5px solid var(--sand);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 64px;
+      box-shadow: var(--shadow-sm);
+      z-index: 1000;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-badge {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--rust), var(--warm-brown));
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px; flex-shrink: 0;
+    }
+    .header-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: var(--text-dark);
+      line-height: 1.2;
+    }
+    .header-subtitle {
+      font-size: 11px;
+      color: var(--text-light);
+      font-weight: 400;
+      letter-spacing: .3px;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--cream); border: 1px solid var(--sand);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; color: var(--text-mid); font-weight: 500;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-anggota   { background: #2ECC71; }
+    .dot-bukan     { background: #F1C40F; }
+    .dot-online    { background: #6DCF87; animation: pulse-dot 2s infinite; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .4; }
+    }
+
+    /* ─── Sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      grid-area: sidebar;
+      background: var(--white);
+      border-right: 1.5px solid var(--sand);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      z-index: 500;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--taupe); border-radius: 4px; }
+
+    .sidebar-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--sand);
+    }
+    .section-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.2px; color: var(--text-light); margin-bottom: 14px;
+    }
+
+    /* Stat cards */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card {
+      background: var(--cream); border-radius: var(--radius-sm);
+      padding: 12px; border: 1px solid var(--sand);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .stat-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+    .stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px; color: var(--text-dark); line-height: 1;
+    }
+    .stat-label { font-size: 11px; color: var(--text-light); margin-top: 4px; font-weight: 400; }
+    .stat-card.accent { background: linear-gradient(135deg, var(--rust), var(--warm-brown)); border-color: transparent; }
+    .stat-card.accent .stat-num, .stat-card.accent .stat-label { color: white; }
+    .stat-card.accent .stat-label { opacity: .8; }
+
+    /* Legend */
+    .legend-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: background .15s;
+      margin-bottom: 4px;
+    }
+    .legend-item:hover { background: var(--cream); }
+    .legend-item.active { background: var(--sand); }
+    .legend-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .legend-icon.anggota { background: rgba(46,204,113,.18); }
+    .legend-icon.bukan   { background: rgba(241,196,15,.18); }
+    .legend-text { flex: 1; }
+    .legend-name  { font-size: 13px; font-weight: 500; color: var(--text-dark); }
+    .legend-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      font-size: 11px; font-weight: 600; background: var(--sand); color: var(--text-mid);
+    }
+
+    /* Layer toggle */
+    .layer-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; margin-bottom: 4px; transition: background .15s;
+    }
+    .layer-toggle:hover { background: var(--cream); }
+    .layer-toggle-left { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-mid); }
+    .layer-icon { font-size: 15px; }
+    .toggle-switch {
+      width: 32px; height: 18px; border-radius: 9px;
+      background: var(--sage); position: relative; cursor: pointer;
+      transition: background .2s; flex-shrink: 0;
+    }
+    .toggle-switch::after {
+      content: ''; position: absolute;
+      width: 14px; height: 14px; border-radius: 50%; background: white;
+      top: 2px; left: 16px; transition: left .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle-switch.off { background: var(--taupe); }
+    .toggle-switch.off::after { left: 2px; }
+
+    /* Info box */
+    .info-box {
+      background: linear-gradient(135deg, var(--cream) 0%, var(--sand) 100%);
+      border-radius: var(--radius); padding: 14px;
+      border: 1px solid var(--taupe);
+      font-size: 12px; line-height: 1.6; color: var(--text-mid);
+    }
+    .info-box strong { color: var(--text-dark); }
+
+    /* ─── Map ────────────────────────────────────────────── */
+    .map-area {
+      grid-area: map;
+      position: relative;
+    }
+    #map {
+      width: 100%; height: 100%;
+    }
+
+    /* Map overlay controls */
+    .map-controls {
+      position: absolute; top: 16px; right: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 800;
+    }
+    .map-btn {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      background: white; border: 1px solid var(--sand);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px;
+      box-shadow: var(--shadow-sm); transition: all .15s;
+      color: var(--text-mid);
+    }
+    .map-btn:hover { background: var(--cream); box-shadow: var(--shadow-md); transform: scale(1.05); }
+
+    /* Search bar on map */
+    .map-search {
+      position: absolute; top: 16px; left: 16px;
+      z-index: 800;
+    }
+    .map-search input {
+      padding: 9px 14px 9px 36px;
+      background: white; border: 1px solid var(--sand);
+      border-radius: 20px; font-size: 13px; color: var(--text-dark);
+      font-family: 'DM Sans', sans-serif;
+      box-shadow: var(--shadow-sm); outline: none;
+      width: 220px; transition: box-shadow .2s, width .2s;
+    }
+    .map-search input:focus { box-shadow: var(--shadow-md); width: 260px; border-color: var(--taupe); }
+    .map-search-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%); font-size: 13px; color: var(--text-light);
+    }
+
+    /* Scale & attribution override */
+    .leaflet-control-attribution {
+      font-family: 'DM Sans', sans-serif !important;
+      font-size: 10px !important;
+      background: rgba(255,255,255,.85) !important;
+      backdrop-filter: blur(4px);
+      border-radius: 6px 0 0 0 !important;
+    }
+    .leaflet-control-zoom {
+      border: 1px solid var(--sand) !important;
+      box-shadow: var(--shadow-sm) !important;
+      border-radius: var(--radius-sm) !important;
+    }
+    .leaflet-control-zoom a {
+      color: var(--text-mid) !important;
+      background: white !important;
+      font-family: 'DM Sans', sans-serif !important;
+    }
+    .leaflet-control-zoom a:hover { background: var(--cream) !important; }
+    .leaflet-control-zoom-in { border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important; }
+    .leaflet-control-zoom-out { border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; }
+
+    /* ─── Custom Popup ───────────────────────────────────── */
+    .leaflet-popup-content-wrapper {
+      border-radius: var(--radius) !important;
+      box-shadow: var(--shadow-lg) !important;
+      border: none !important;
+      padding: 0 !important;
+      overflow: hidden;
+      min-width: 240px;
+    }
+    .leaflet-popup-content {
+      margin: 0 !important;
+      width: auto !important;
+    }
+    .leaflet-popup-tip-container { display: none; }
+
+    .popup-card { font-family: 'DM Sans', sans-serif; }
+    .popup-header {
+      padding: 16px 18px 14px;
+      position: relative;
+    }
+    .popup-header.anggota {
+      background: linear-gradient(135deg, var(--sage) 0%, #5A8A78 100%);
+    }
+    .popup-header.bukan {
+      background: linear-gradient(135deg, var(--rust) 0%, var(--warm-brown) 100%);
+    }
+    .popup-type-badge {
+      display: inline-block;
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+      background: rgba(255,255,255,.22); color: white;
+      margin-bottom: 6px;
+    }
+    .popup-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 17px; color: white; line-height: 1.3;
+    }
+    .popup-body { padding: 14px 18px 16px; background: white; }
+    .popup-row {
+      display: flex; align-items: flex-start; gap: 8px;
+      margin-bottom: 8px; font-size: 12px;
+    }
+    .popup-row:last-child { margin-bottom: 0; }
+    .popup-icon { font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+    .popup-field { color: var(--text-light); margin-right: 4px; }
+    .popup-value { color: var(--text-dark); font-weight: 500; }
+    .popup-divider { height: 1px; background: var(--sand); margin: 10px 0; }
+    .popup-coords {
+      font-size: 10.5px; color: var(--text-light);
+      display: flex; gap: 6px; align-items: center;
+    }
+    .popup-coords-badge {
+      background: var(--cream); border: 1px solid var(--sand);
+      border-radius: 6px; padding: 2px 7px;
+      font-family: 'DM Sans', monospace;
+    }
+
+    /* ─── Cluster Customization ──────────────────────────── */
+    .cluster-custom {
+      background: transparent;
+      border: none;
+    }
+    .cluster-inner {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 15px; font-weight: 400;
+      color: white;
+      box-shadow: 0 3px 12px rgba(0,0,0,.2);
+      border: 2.5px solid rgba(255,255,255,.6);
+      transition: transform .15s;
+    }
+    .cluster-inner:hover { transform: scale(1.1); }
+    .cluster-inner.small  { background: var(--sky); }
+    .cluster-inner.medium { background: var(--sage); }
+    .cluster-inner.large  { background: var(--rust); width: 52px; height: 52px; font-size: 17px; }
+
+    /* ─── Toast notification ─────────────────────────────── */
+    .toast {
+      position: absolute; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--text-dark); color: white;
+      padding: 10px 18px; border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      box-shadow: var(--shadow-md);
+      opacity: 0; transition: opacity .3s, transform .3s;
+      z-index: 900; pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ─── Responsive ─────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas: "header" "map" "sidebar";
+      }
+      .sidebar { max-height: 240px; border-right: none; border-top: 1.5px solid var(--sand); }
+      .map-search { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-badge">🏘</div>
+      <div>
+        <div class="header-title">Peta Cluster Padmagriya</div>
+        <div class="header-subtitle">Informasi Warga &amp; Keanggotaan Perumahan</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-pill">
+        <span class="dot dot-anggota"></span>
+        Anggota
+      </div>
+      <div class="header-pill">
+        <span class="dot dot-bukan"></span>
+        Bukan Anggota
+      </div>
+      <div class="header-pill">
+        <span class="dot dot-online"></span>
+        Live
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+
+    <!-- Stats -->
+    <div class="sidebar-section">
+      <div class="section-label">Statistik Warga</div>
+      <div class="stat-grid">
+        <div class="stat-card accent">
+          <div class="stat-num" id="stat-total">—</div>
+          <div class="stat-label">Total Warga</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-anggota">—</div>
+          <div class="stat-label">Anggota</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-bukan">—</div>
+          <div class="stat-label">Bukan Anggota</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="stat-pct">—</div>
+          <div class="stat-label">% Anggota</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="sidebar-section">
+      <div class="section-label">Kategori</div>
+      <div class="legend-item active" id="leg-anggota" onclick="toggleLayer('anggota')">
+        <div class="legend-icon anggota" style="color:#2ECC71">●</div>
+        <div class="legend-text">
+          <div class="legend-name">Anggota</div>
+          <div style="font-size:11px;color:var(--text-light);margin-top:2px">Terdaftar sebagai anggota</div>
+        </div>
+        <div class="legend-count" id="cnt-anggota">—</div>
+      </div>
+      <div class="legend-item active" id="leg-bukan" onclick="toggleLayer('bukan')">
+        <div class="legend-icon bukan" style="color:#F1C40F">●</div>
+        <div class="legend-text">
+          <div class="legend-name">Bukan Anggota</div>
+          <div style="font-size:11px;color:var(--text-light);margin-top:2px">Belum terdaftar</div>
+        </div>
+        <div class="legend-count" id="cnt-bukan">—</div>
+      </div>
+    </div>
+
+    <!-- Layers -->
+    <div class="sidebar-section">
+      <div class="section-label">Layer Peta</div>
+      <div class="layer-toggle" onclick="toggleBasemap('osm')">
+        <div class="layer-toggle-left">
+          <span class="layer-icon">🗺</span>
+          <span>OpenStreetMap</span>
+        </div>
+        <div class="toggle-switch off" id="sw-osm"></div>
+      </div>
+      <div class="layer-toggle" onclick="toggleBasemap('satellite')">
+        <div class="layer-toggle-left">
+          <span class="layer-icon">🛰</span>
+          <span>Satellite</span>
+        </div>
+        <div class="toggle-switch" id="sw-satellite"></div>
+      </div>
+      <div class="layer-toggle" onclick="toggleCluster()">
+        <div class="layer-toggle-left">
+          <span class="layer-icon">📍</span>
+          <span>Cluster Markers</span>
+        </div>
+        <div class="toggle-switch off" id="sw-cluster"></div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="sidebar-section">
+      <div class="section-label">Informasi</div>
+      <div class="info-box">
+        Peta ini menampilkan sebaran warga Perumahan <strong>Padmagriya</strong> berdasarkan status keanggotaan. Klik marker untuk melihat detail warga.
+        <br/><br/>
+        Data diperbarui secara berkala oleh pengurus perumahan.
+	@irland2026	
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Map ── -->
+  <div class="map-area">
+    <div id="map"></div>
+
+    <!-- Search -->
+    <div class="map-search">
+      <span class="map-search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Cari nama warga..." oninput="filterMarkers()" />
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet MarkerCluster JS -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+// ─── Map init ─────────────────────────────────────────────
+const map = L.map('map', {
+  center: [-6.9768214917184, 107.64620],   // centroid Padmagriya
+  zoom: 19,
+  zoomControl: true,
+  attributionControl: true,
+});
+
+// Basemap layers
+const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom: 19,
+});
+const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+  maxZoom: 19,
+});
+
+satelliteLayer.addTo(map);
+let currentBase = 'satellite';
+let clusterOn = false;
+
+// ─── Data ─────────────────────────────────────────────────
+// ⚠  PASTE YOUR ClusterPadmagriya_2.js DATA HERE
+// Format: array of objects with at minimum: nama, status, lat, lng
+// status: "Anggota" | "Bukan Anggota"
+// 
+// Example dataset (replace with actual data from your JS file):
+const wardaData = [
+{ nama: "Zakif", blok: "15", no: "3", status: "Anggota", lat: -6.9768214917184, lng: 107.646960964977 },
+{ nama: "Yuni", blok: "16", no: "36", status: "Anggota", lat: -6.97643854690136, lng: 107.647554205462 },
+{ nama: "Yonatan", blok: "15", no: "12", status: "Anggota", lat: -6.97667324117708, lng: 107.647126793667 },
+{ nama: "Yanti", blok: "11", no: "23", status: "Anggota", lat: -6.97675973797146, lng: 107.646612196196 },
+{ nama: "Wulan", blok: "17", no: "15", status: "Anggota", lat: -6.97631939572346, lng: 107.647565545014 },
+{ nama: "Wina", blok: "16", no: "12", status: "Anggota", lat: -6.97639198450241, lng: 107.64715735173 },
+{ nama: "Wie²", blok: "10", no: "8", status: "Anggota", lat: -6.97813832852097, lng: 107.646192487993 },
+{ nama: "Uus Rohiman", blok: "15", no: "17", status: "Anggota", lat: -6.97685290054091, lng: 107.64725771697 },
+{ nama: "Ully", blok: "2", no: "16", status: "Anggota", lat: -6.97763375939041, lng: 107.645294252328 },
+{ nama: "Tini Hartini", blok: "2", no: "27", status: "Anggota", lat: -6.97706580064613, lng: 107.645594597113 },
+{ nama: "Tia", blok: "8", no: "38", status: "Anggota", lat: -6.97768183175111, lng: 107.646265208073 },
+{ nama: "Temmy Tj. Y", blok: "12", no: "11", status: "Anggota", lat: -6.97712255056518, lng: 107.647225457389 },
+{ nama: "Tedy", blok: "11", no: "11", status: "Anggota", lat: -6.9767284388663, lng: 107.646296234684 },
+{ nama: "Syenny", blok: "7", no: "15", status: "Anggota", lat: -6.97760491453511, lng: 107.645874601032 },
+{ nama: "Suryasa Kartolo", blok: "15", no: "23", status: "Anggota", lat: -6.97686900380143, lng: 107.647406918994 },
+{ nama: "Suman F.", blok: "15", no: "19", status: "Anggota", lat: -6.97685810401822, lng: 107.647307194971 },
+{ nama: "Solihin", blok: "15", no: "21", status: "Anggota", lat: -6.97686350534644, lng: 107.647356966151 },
+{ nama: "Santi", blok: "1A", no: "15", status: "Anggota", lat: -6.9791271358086, lng: 107.645637357178 },
+{ nama: "Sandi", blok: "7", no: "19", status: "Anggota", lat: -6.97765439073748, lng: 107.645972579471 },
+{ nama: "Sabila", blok: "7", no: "5", status: "Anggota", lat: -6.97750859534534, lng: 107.645681579541 },
+{ nama: "Runi", blok: "1", no: "18", status: "Anggota", lat: -6.97897152431636, lng: 107.645572011539 },
+{ nama: "Roy Saphely", blok: "5", no: "11", status: "Anggota", lat: -6.97811582208749, lng: 107.645610380215 },
+{ nama: "Rizal", blok: "8", no: "32", status: "Anggota", lat: -6.97763277912941, lng: 107.646166246675 },
+{ nama: "Riza", blok: "3", no: "6", status: "Anggota", lat: -6.97843416230671, lng: 107.645165114179 },
+{ nama: "Riza", blok: "10", no: "25", status: "Anggota", lat: -6.97691524694102, lng: 107.646528431542 },
+{ nama: "Risma", blok: "6", no: "27", status: "Anggota", lat: -6.97801109783387, lng: 107.646058074421 },
+{ nama: "Rini", blok: "17", no: "16", status: "Anggota", lat: -6.97632531685986, lng: 107.647620470209 },
+{ nama: "Riki Fauzi R.", blok: "1A", no: "10", status: "Anggota", lat: -6.97904180813288, lng: 107.645464517374 },
+{ nama: "Ridwan", blok: "1A", no: "6", status: "Anggota", lat: -6.97887675735643, lng: 107.645132266441 },
+{ nama: "Resha", blok: "19", no: "2", status: "Anggota", lat: -6.976139952197, lng: 107.647618718329 },
+{ nama: "Renny", blok: "5", no: "12", status: "Anggota", lat: -6.97825150909983, lng: 107.645469401592 },
+{ nama: "Reiza", blok: "17", no: "10", status: "Anggota", lat: -6.97630021228491, lng: 107.647402314465 },
+{ nama: "Otip", blok: "15", no: "16", status: "Anggota", lat: -6.97667844015785, lng: 107.647176099897 },
+{ nama: "Nisya", blok: "16", no: "15", status: "Anggota", lat: -6.97657951563207, lng: 107.64723853533 },
+{ nama: "Nina", blok: "3", no: "8", status: "Anggota", lat: -6.97846158983049, lng: 107.645221784957 },
+{ nama: "Nia", blok: "1A", no: "11", status: "Anggota", lat: -6.97906954862071, lng: 107.645521582055 },
+{ nama: "Nelly", blok: "1", no: "17", status: "Anggota", lat: -6.97899896802789, lng: 107.645628977296 },
+{ nama: "Naufal Adam", blok: "18", no: "8", status: "Anggota", lat: -6.97598514559792, lng: 107.647280456328 },
+{ nama: "Nani", blok: "12", no: "15", status: "Anggota", lat: -6.97713005091106, lng: 107.647276167461 },
+{ nama: "Najamudin A.", blok: "8", no: "6", status: "Anggota", lat: -6.97739014743729, lng: 107.645680558811 },
+{ nama: "Murni", blok: "1A", no: "12", status: "Anggota", lat: -6.97909959946691, lng: 107.645579499295 },
+{ nama: "Mubarok", blok: "8", no: "50", status: "Anggota", lat: -6.9777127522417, lng: 107.646327601238 },
+{ nama: "Mery", blok: "18", no: "7", status: "Anggota", lat: -6.97590061202357, lng: 107.647081490319 },
+{ nama: "Mas Maju", blok: "1", no: "29", status: "Anggota", lat: -6.97865718428159, lng: 107.644950207686 },
+{ nama: "Marisa Fatma", blok: "10", no: "12", status: "Anggota", lat: -6.97757931803108, lng: 107.646590235651 },
+{ nama: "Mama Gael", blok: "16", no: "20", status: "Anggota", lat: -6.97641025512911, lng: 107.64730598898 },
+{ nama: "Lia", blok: "3", no: "25", status: "Anggota", lat: -6.9785550482768, lng: 107.645818683885 },
+{ nama: "Lia", blok: "10", no: "19", status: "Anggota", lat: -6.9772988068944, lng: 107.646727497376 },
+{ nama: "Khalia Tj", blok: "11", no: "3", status: "Anggota", lat: -6.97670366793989, lng: 107.646042354271 },
+{ nama: "Jordi", blok: "16", no: "32", status: "Anggota", lat: -6.97643281462263, lng: 107.647501475513 },
+{ nama: "Jefri", blok: "17", no: "11", status: "Anggota", lat: -6.9763072728623, lng: 107.647458298162 },
+{ nama: "Jali Usman", blok: "7", no: "9", status: "Anggota", lat: -6.97755703552872, lng: 107.64577813885 },
+{ nama: "Iwan", blok: "16", no: "30", status: "Anggota", lat: -6.97642748344157, lng: 107.64745233116 },
+{ nama: "Irland", blok: "10", no: "32", status: "Anggota", lat: -6.97730211370151, lng: 107.646489983726 },
+{ nama: "Intan", blok: "1A", no: "8", status: "Anggota", lat: -6.97893696696741, lng: 107.645252462631 },
+{ nama: "Indramendru", blok: "16", no: "9", status: "Anggota", lat: -6.97656875614314, lng: 107.647138477659 },
+{ nama: "Indra", blok: "19", no: "7", status: "Anggota", lat: -6.97594442699369, lng: 107.647432734033 },
+{ nama: "Ilham", blok: "8", no: "8", status: "Anggota", lat: -6.97741418631563, lng: 107.645729566466 },
+{ nama: "Ilham", blok: "18", no: "2", status: "Anggota", lat: -6.97611480715256, lng: 107.647262844904 },
+{ nama: "Ike", blok: "17", no: "12", status: "Anggota", lat: -6.97631375157835, lng: 107.647513508442 },
+{ nama: "I. Christian", blok: "3", no: "10", status: "Anggota", lat: -6.97848979436844, lng: 107.645277786641 },
+{ nama: "Hosi", blok: "16", no: "11", status: "Anggota", lat: -6.97657407293508, lng: 107.647188010518 },
+{ nama: "Hendi", blok: "3", no: "3", status: "Anggota", lat: -6.97826838847533, lng: 107.645248880631 },
+{ nama: "H.Leonard", blok: "17", no: "5", status: "Anggota", lat: -6.97626992851434, lng: 107.647133684272 },
+{ nama: "Gigin Ginanjar", blok: "8", no: "17", status: "Anggota", lat: -6.97733207101822, lng: 107.646144175513 },
+{ nama: "Fransisca D.P", blok: "1", no: "12", status: "Anggota", lat: -6.97885268790117, lng: 107.645732153816 },
+{ nama: "Fakhrul A.", blok: "18", no: "3", status: "Anggota", lat: -6.97602121920386, lng: 107.647071921532 },
+{ nama: "Ervan", blok: "17", no: "6", status: "Anggota", lat: -6.97627597375714, lng: 107.647188487159 },
+{ nama: "Erna", blok: "7", no: "3", status: "Anggota", lat: -6.97748489281349, lng: 107.64563315015 },
+{ nama: "Erick", blok: "1", no: "7", status: "Anggota", lat: -6.97864954633945, lng: 107.645341809377 },
+{ nama: "Epin", blok: "19", no: "3", status: "Anggota", lat: -6.97605777484637, lng: 107.647418017528 },
+{ nama: "Eko", blok: "10", no: "6", status: "Anggota", lat: -6.97879182358372, lng: 107.645968391328 },
+{ nama: "Dodiek", blok: "15", no: "15", status: "Anggota", lat: -6.97684760982929, lng: 107.647208160728 },
+{ nama: "Djoko Harijanto", blok: "2", no: "21", status: "Anggota", lat: -6.97734869048963, lng: 107.64544567208 },
+{ nama: "Dini", blok: "19", no: "6", status: "Anggota", lat: -6.97608065989448, lng: 107.647625456949 },
+{ nama: "Dian", blok: "19", no: "10", status: "Anggota", lat: -6.97596810794175, lng: 107.647639919846 },
+{ nama: "Dewi", blok: "5", no: "20", status: "Anggota", lat: -6.97833708498842, lng: 107.645639492169 },
+{ nama: "Dewi", blok: "10", no: "29", status: "Anggota", lat: -6.97717390545131, lng: 107.646502336813 },
+{ nama: "Dede", blok: "18", no: "6", status: "Anggota", lat: -6.97604153309021, lng: 107.647273088183 },
+{ nama: "Dea", blok: "1", no: "26", status: "Anggota", lat: -6.97874618928518, lng: 107.645128572026 },
+{ nama: "David", blok: "18", no: "5", status: "Anggota", lat: -6.97596374622987, lng: 107.647075653719 },
+{ nama: "Cordova", blok: "16", no: "17", status: "Anggota", lat: -6.97658517866302, lng: 107.647287892822 },
+{ nama: "Chandra", blok: "18", no: "10", status: "Anggota", lat: -6.97592525884357, lng: 107.647289907303 },
+{ nama: "Budi Setiawan", blok: "17", no: "8", status: "Anggota", lat: -6.97628671256172, lng: 107.647296407603 },
+{ nama: "Budi", blok: "1", no: "11", status: "Anggota", lat: -6.97882169726347, lng: 107.645671062869 },
+{ nama: "Asih Samihadi", blok: "17", no: "9", status: "Anggota", lat: -6.97629582359332, lng: 107.647349211297 },
+{ nama: "Artri", blok: "19", no: "8", status: "Anggota", lat: -6.97602420225508, lng: 107.64763512646 },
+{ nama: "Ari", blok: "11", no: "1", status: "Anggota", lat: -6.97669619367434, lng: 107.645974098426 },
+{ nama: "Anton", blok: "8", no: "12", status: "Anggota", lat: -6.97746252577491, lng: 107.645825985481 },
+{ nama: "Anna", blok: "1A", no: "7", status: "Anggota", lat: -6.97890504013543, lng: 107.645189468719 },
+{ nama: "Anis", blok: "1A", no: "9", status: "Anggota", lat: -6.97901166105925, lng: 107.645407619066 },
+{ nama: "Ambit", blok: "1", no: "8", status: "Anggota", lat: -6.97867983100934, lng: 107.645401900278 },
+{ nama: "Alvin", blok: "10", no: "3", status: "Anggota", lat: -6.97890066223573, lng: 107.645938236161 },
+{ nama: "Akmal", blok: "19", no: "1", status: "Anggota", lat: -6.97613316861077, lng: 107.647407618667 },
+{ nama: "Agung M.R", blok: "11", no: "7", status: "Anggota", lat: -6.97671471341323, lng: 107.646165712478 },
+{ nama: "Agung", blok: "2", no: "25", status: "Anggota", lat: -6.97723472839994, lng: 107.645506210843 },
+{ nama: " Wawan Gunawan", blok: "5", no: "18", status: "Anggota", lat: -6.97830930133313, lng: 107.645583960831 },
+{ nama: " R.Febi L.F.", blok: "3", no: "28", status: "Anggota", lat: -6.97871497111896, lng: 107.645725305479 },
+{ nama: " Atikha Nurhayati", blok: "17", no: "1", status: "Anggota", lat: -6.97625006788627, lng: 107.646964006484 },
+{ nama: " ", blok: "1", no: "25", status: "Bukan Anggota", lat: -6.97877521760216, lng: 107.645184883975 },
+{ nama: " ", blok: "11", no: "27", status: "Bukan Anggota", lat: -6.97677278893303, lng: 107.646747356206 },
+{ nama: " ", blok: "2", no: "39", status: "Bukan Anggota", lat: -6.97700265744663, lng: 107.64584666719 },
+{ nama: " ", blok: "8", no: "25", status: "Bukan Anggota", lat: -6.97754389463501, lng: 107.64641244328 },
+{ nama: " ", blok: "6", no: "1", status: "Bukan Anggota", lat: -6.97770764768973, lng: 107.645448102948 },
+{ nama: " ", blok: "8", no: "11", status: "Bukan Anggota", lat: -6.97720199037951, lng: 107.646158776007 },
+{ nama: " ", blok: "7", no: "1", status: "Bukan Anggota", lat: -6.97745463422393, lng: 107.645572539441 },
+{ nama: " ", blok: "5", no: "1", status: "Bukan Anggota", lat: -6.97797079291769, lng: 107.64532109799 },
+{ nama: " ", blok: "3", no: "1", status: "Bukan Anggota", lat: -6.97823812988577, lng: 107.645189182735 },
+{ nama: " ", blok: "1", no: "1", status: "Bukan Anggota", lat: -6.97850534004937, lng: 107.645051263605 },
+{ nama: " ", blok: "1", no: "28", status: "Bukan Anggota", lat: -6.97869035397662, lng: 107.645016043456 },
+{ nama: " ", blok: "1", no: "23", status: "Bukan Anggota", lat: -6.97880334569783, lng: 107.64524167886 },
+{ nama: " ", blok: "1", no: "21", status: "Bukan Anggota", lat: -6.97883518799347, lng: 107.645304560357 },
+{ nama: " ", blok: "1", no: "20", status: "Bukan Anggota", lat: -6.97891377794843, lng: 107.645457572809 },
+{ nama: " ", blok: "1", no: "9", status: "Bukan Anggota", lat: -6.9787599713955, lng: 107.645548904359 },
+{ nama: " ", blok: "1", no: "19", status: "Bukan Anggota", lat: -6.97894201845935, lng: 107.64551662859 },
+{ nama: " ", blok: "1", no: "16", status: "Bukan Anggota", lat: -6.97902788482895, lng: 107.64568570653 },
+{ nama: " ", blok: "1", no: "15", status: "Bukan Anggota", lat: -6.97905414593203, lng: 107.645739814241 },
+{ nama: " ", blok: "12", no: "32", status: "Bukan Anggota", lat: -6.97697216233536, lng: 107.647457245955 },
+{ nama: " ", blok: "15", no: "32", status: "Bukan Anggota", lat: -6.97671239226304, lng: 107.647487056682 },
+{ nama: " ", blok: "1A", no: "1", status: "Bukan Anggota", lat: -6.97875933107821, lng: 107.644898844706 },
+{ nama: " ", blok: "5", no: "2", status: "Bukan Anggota", lat: -6.97813635630774, lng: 107.64524121571 },
+{ nama: " ", blok: "3", no: "2", status: "Bukan Anggota", lat: -6.97840307364288, lng: 107.645104005246 },
+{ nama: " ", blok: "1", no: "2", status: "Bukan Anggota", lat: -6.97853647098128, lng: 107.645112217855 },
+{ nama: " ", blok: "1", no: "3", status: "Bukan Anggota", lat: -6.97856385713624, lng: 107.645169019035 },
+{ nama: " ", blok: "1", no: "5", status: "Bukan Anggota", lat: -6.97859168305968, lng: 107.645224116 },
+{ nama: " ", blok: "1", no: "6", status: "Bukan Anggota", lat: -6.9786214434248, lng: 107.64528205932 },
+{ nama: " ", blok: "1", no: "10", status: "Bukan Anggota", lat: -6.97879389742036, lng: 107.645613840806 },
+{ nama: " ", blok: "3", no: "30", status: "Bukan Anggota", lat: -6.9787449500194, lng: 107.645787041239 },
+{ nama: " ", blok: "5", no: "32", status: "Bukan Anggota", lat: -6.97845302288863, lng: 107.645870145791 },
+{ nama: " ", blok: "3", no: "23", status: "Bukan Anggota", lat: -6.97852614856288, lng: 107.645760186583 },
+{ nama: " ", blok: "5", no: "16", status: "Bukan Anggota", lat: -6.97827956704833, lng: 107.645526734271 },
+{ nama: " ", blok: "5", no: "26", status: "Bukan Anggota", lat: -6.97836537766, lng: 107.645696404865 },
+{ nama: " ", blok: "5", no: "28", status: "Bukan Anggota", lat: -6.97839530709768, lng: 107.645755091924 },
+{ nama: " ", blok: "5", no: "30", status: "Bukan Anggota", lat: -6.97842422389874, lng: 107.645812113438 },
+{ nama: " ", blok: "3", no: "12", status: "Bukan Anggota", lat: -6.97851813200612, lng: 107.645332867418 },
+{ nama: " ", blok: "3", no: "16", status: "Bukan Anggota", lat: -6.97854569173023, lng: 107.645390335895 },
+{ nama: " ", blok: "3", no: "18", status: "Bukan Anggota", lat: -6.97857603935267, lng: 107.645452590565 },
+{ nama: " ", blok: "3", no: "26", status: "Bukan Anggota", lat: -6.97868512262028, lng: 107.645669094253 },
+{ nama: " ", blok: "3", no: "20", status: "Bukan Anggota", lat: -6.97865381272322, lng: 107.645602947318 },
+{ nama: " ", blok: "6", no: "6", status: "Bukan Anggota", lat: -6.97790044075271, lng: 107.645435208468 },
+{ nama: " ", blok: "6", no: "8", status: "Bukan Anggota", lat: -6.97792978473171, lng: 107.645492175124 },
+{ nama: " ", blok: "6", no: "10", status: "Bukan Anggota", lat: -6.97795709624296, lng: 107.645549221819 },
+{ nama: " ", blok: "6", no: "12", status: "Bukan Anggota", lat: -6.97798610117758, lng: 107.645604945612 },
+{ nama: " ", blok: "6", no: "16", status: "Bukan Anggota", lat: -6.97801496312002, lng: 107.645662506719 },
+{ nama: " ", blok: "6", no: "15", status: "Bukan Anggota", lat: -6.97785753949381, lng: 107.645748712133 },
+{ nama: " ", blok: "6", no: "18", status: "Bukan Anggota", lat: -6.97804413352986, lng: 107.645721224355 },
+{ nama: " ", blok: "6", no: "17", status: "Bukan Anggota", lat: -6.97788156398292, lng: 107.645797522837 },
+{ nama: " ", blok: "6", no: "19", status: "Bukan Anggota", lat: -6.97790569639074, lng: 107.645845613185 },
+{ nama: " ", blok: "6", no: "20", status: "Bukan Anggota", lat: -6.97807143604791, lng: 107.645775242134 },
+{ nama: " ", blok: "6", no: "21", status: "Bukan Anggota", lat: -6.9779293683456, lng: 107.645894106428 },
+{ nama: " ", blok: "6", no: "26", status: "Bukan Anggota", lat: -6.97809955694896, lng: 107.645830134953 },
+{ nama: " ", blok: "6", no: "23", status: "Bukan Anggota", lat: -6.97795371749004, lng: 107.645942608665 },
+{ nama: " ", blok: "6", no: "28", status: "Bukan Anggota", lat: -6.97812916532865, lng: 107.64588935531 },
+{ nama: " ", blok: "6", no: "25", status: "Bukan Anggota", lat: -6.97797896325852, lng: 107.645991420268 },
+{ nama: " ", blok: "6", no: "30", status: "Bukan Anggota", lat: -6.97816399157489, lng: 107.645958606704 },
+{ nama: " ", blok: "7", no: "36", status: "Bukan Anggota", lat: -6.97791423095697, lng: 107.646105766368 },
+{ nama: " ", blok: "7", no: "2", status: "Bukan Anggota", lat: -6.97761148318335, lng: 107.645497225716 },
+{ nama: " ", blok: "7", no: "20", status: "Bukan Anggota", lat: -6.97778475106537, lng: 107.645845378462 },
+{ nama: " ", blok: "7", no: "26", status: "Bukan Anggota", lat: -6.97780891584875, lng: 107.645893618995 },
+{ nama: " ", blok: "7", no: "28", status: "Bukan Anggota", lat: -6.97783300778701, lng: 107.645942751657 },
+{ nama: " ", blok: "7", no: "30", status: "Bukan Anggota", lat: -6.97785791720906, lng: 107.645992485065 },
+{ nama: " ", blok: "7", no: "32", status: "Bukan Anggota", lat: -6.97788237697006, lng: 107.646039989054 },
+{ nama: " ", blok: "5", no: "23", status: "Bukan Anggota", lat: -6.97826461312133, lng: 107.645905983774 },
+{ nama: " ", blok: "5", no: "3", status: "Bukan Anggota", lat: -6.97800258215341, lng: 107.645385558697 },
+{ nama: " ", blok: "5", no: "5", status: "Bukan Anggota", lat: -6.97803222021076, lng: 107.645443228622 },
+{ nama: " ", blok: "5", no: "7", status: "Bukan Anggota", lat: -6.97805893727008, lng: 107.645499103501 },
+{ nama: " ", blok: "5", no: "9", status: "Bukan Anggota", lat: -6.97808685132708, lng: 107.645552607767 },
+{ nama: " ", blok: "5", no: "17", status: "Bukan Anggota", lat: -6.97817092085126, lng: 107.645720486012 },
+{ nama: " ", blok: "5", no: "19", status: "Bukan Anggota", lat: -6.97819918654318, lng: 107.645775558695 },
+{ nama: " ", blok: "5", no: "21", status: "Bukan Anggota", lat: -6.97822936509306, lng: 107.645835913996 },
+{ nama: " ", blok: "5", no: "6", status: "Bukan Anggota", lat: -6.97816644942208, lng: 107.645300692373 },
+{ nama: " ", blok: "5", no: "8", status: "Bukan Anggota", lat: -6.97819469173157, lng: 107.645357203073 },
+{ nama: " ", blok: "5", no: "10", status: "Bukan Anggota", lat: -6.97822325959572, lng: 107.645413352244 },
+{ nama: " ", blok: "3", no: "7", status: "Bukan Anggota", lat: -6.97832532275538, lng: 107.645361741052 },
+{ nama: " ", blok: "8", no: "23", status: "Bukan Anggota", lat: -6.97752620137305, lng: 107.646338919206 },
+{ nama: " ", blok: "8", no: "36", status: "Bukan Anggota", lat: -6.97765610574464, lng: 107.646213911643 },
+{ nama: " ", blok: "8", no: "30", status: "Bukan Anggota", lat: -6.97760864852029, lng: 107.646119080831 },
+{ nama: " ", blok: "8", no: "28", status: "Bukan Anggota", lat: -6.97758456377653, lng: 107.646070275523 },
+{ nama: " ", blok: "8", no: "26", status: "Bukan Anggota", lat: -6.97756086484202, lng: 107.646022480153 },
+{ nama: " ", blok: "8", no: "20", status: "Bukan Anggota", lat: -6.97753593383624, lng: 107.645973383465 },
+{ nama: " ", blok: "8", no: "18", status: "Bukan Anggota", lat: -6.97751079059049, lng: 107.645923118557 },
+{ nama: " ", blok: "8", no: "16", status: "Bukan Anggota", lat: -6.97748713482338, lng: 107.645875034505 },
+{ nama: " ", blok: "8", no: "10", status: "Bukan Anggota", lat: -6.9774384185481, lng: 107.645777003906 },
+{ nama: " ", blok: "8", no: "2", status: "Bukan Anggota", lat: -6.97736014425521, lng: 107.645620439132 },
+{ nama: " ", blok: "6", no: "3", status: "Bukan Anggota", lat: -6.97773710588268, lng: 107.645505616391 },
+{ nama: " ", blok: "6", no: "5", status: "Bukan Anggota", lat: -6.97776018698301, lng: 107.645554708583 },
+{ nama: " ", blok: "6", no: "7", status: "Bukan Anggota", lat: -6.97778507032467, lng: 107.645603186538 },
+{ nama: " ", blok: "6", no: "9", status: "Bukan Anggota", lat: -6.97781011284638, lng: 107.645652378554 },
+{ nama: " ", blok: "6", no: "11", status: "Bukan Anggota", lat: -6.97783308602806, lng: 107.645700554337 },
+{ nama: " ", blok: "7", no: "33", status: "Bukan Anggota", lat: -6.97780728357924, lng: 107.646279876016 },
+{ nama: " ", blok: "7", no: "29", status: "Bukan Anggota", lat: -6.97777648179914, lng: 107.646217567387 },
+{ nama: " ", blok: "7", no: "27", status: "Bukan Anggota", lat: -6.97775061369981, lng: 107.646166073106 },
+{ nama: " ", blok: "7", no: "25", status: "Bukan Anggota", lat: -6.9777268787924, lng: 107.646117382012 },
+{ nama: " ", blok: "7", no: "23", status: "Bukan Anggota", lat: -6.97770235428015, lng: 107.646069733232 },
+{ nama: " ", blok: "7", no: "21", status: "Bukan Anggota", lat: -6.97767848447444, lng: 107.646021204015 },
+{ nama: " ", blok: "7", no: "17", status: "Bukan Anggota", lat: -6.97762938598731, lng: 107.64592351246 },
+{ nama: " ", blok: "7", no: "11", status: "Bukan Anggota", lat: -6.97758161669822, lng: 107.645827093446 },
+{ nama: " ", blok: "7", no: "7", status: "Bukan Anggota", lat: -6.97753275743077, lng: 107.645728754379 },
+{ nama: " ", blok: "7", no: "6", status: "Bukan Anggota", lat: -6.97764035411899, lng: 107.645553889301 },
+{ nama: " ", blok: "7", no: "8", status: "Bukan Anggota", lat: -6.97766367623763, lng: 107.645602861883 },
+{ nama: " ", blok: "7", no: "10", status: "Bukan Anggota", lat: -6.97768903801864, lng: 107.645652707706 },
+{ nama: " ", blok: "7", no: "12", status: "Bukan Anggota", lat: -6.977713255862, lng: 107.645700422137 },
+{ nama: " ", blok: "7", no: "16", status: "Bukan Anggota", lat: -6.97773608335353, lng: 107.645747916233 },
+{ nama: " ", blok: "7", no: "18", status: "Bukan Anggota", lat: -6.97776068340875, lng: 107.64579659024 },
+{ nama: " ", blok: "11", no: "21", status: "Bukan Anggota", lat: -6.97675346160293, lng: 107.646547372164 },
+{ nama: " ", blok: "10", no: "33", status: "Bukan Anggota", lat: -6.97737328514893, lng: 107.646484223568 },
+{ nama: " ", blok: "10", no: "26", status: "Bukan Anggota", lat: -6.97698940054033, lng: 107.646521374562 },
+{ nama: " ", blok: "10", no: "30", status: "Bukan Anggota", lat: -6.97723760892848, lng: 107.646497866284 },
+{ nama: " ", blok: "2", no: "18", status: "Bukan Anggota", lat: -6.97751928378784, lng: 107.645355414321 },
+{ nama: " ", blok: "11", no: "17", status: "Bukan Anggota", lat: -6.97674062288138, lng: 107.646420713445 },
+{ nama: " ", blok: "11", no: "15", status: "Bukan Anggota", lat: -6.97673413427282, lng: 107.64635818808 },
+{ nama: " ", blok: "8", no: "5", status: "Bukan Anggota", lat: -6.97718022588668, lng: 107.645881688589 },
+{ nama: " ", blok: "8", no: "7", status: "Bukan Anggota", lat: -6.97719005817459, lng: 107.645944144707 },
+{ nama: " ", blok: "8", no: "9", status: "Bukan Anggota", lat: -6.97719846233912, lng: 107.646007769043 },
+{ nama: " ", blok: "8", no: "15", status: "Bukan Anggota", lat: -6.97726853481498, lng: 107.646148196382 },
+{ nama: " ", blok: "8", no: "19", status: "Bukan Anggota", lat: -6.97739786901639, lng: 107.646133139033 },
+{ nama: " ", blok: "2", no: "19", status: "Bukan Anggota", lat: -6.97746266966641, lng: 107.645383203372 },
+{ nama: " ", blok: "2", no: "17", status: "Bukan Anggota", lat: -6.97757595816387, lng: 107.645323204203 },
+{ nama: " ", blok: "11", no: "19", status: "Bukan Anggota", lat: -6.9767470755171, lng: 107.646483752323 },
+{ nama: " ", blok: "2", no: "20", status: "Bukan Anggota", lat: -6.97740781731687, lng: 107.645416061902 },
+{ nama: " ", blok: "2", no: "23", status: "Bukan Anggota", lat: -6.97729232278243, lng: 107.645477341706 },
+{ nama: " ", blok: "11", no: "25", status: "Bukan Anggota", lat: -6.97676613484919, lng: 107.646676041766 },
+{ nama: " ", blok: "12", no: "2", status: "Bukan Anggota", lat: -6.97691148777488, lng: 107.646889640644 },
+{ nama: " ", blok: "15", no: "2", status: "Bukan Anggota", lat: -6.97665016547273, lng: 107.646919009804 },
+{ nama: " ", blok: "15", no: "6", status: "Bukan Anggota", lat: -6.97665663699416, lng: 107.646975381109 },
+{ nama: " ", blok: "15", no: "1", status: "Bukan Anggota", lat: -6.97681468295121, lng: 107.646901178047 },
+{ nama: " ", blok: "16", no: "1", status: "Bukan Anggota", lat: -6.97654597271844, lng: 107.646931464516 },
+{ nama: " ", blok: "16", no: "3", status: "Bukan Anggota", lat: -6.97655238848188, lng: 107.646988880832 },
+{ nama: " ", blok: "12", no: "6", status: "Bukan Anggota", lat: -6.97691854655363, lng: 107.646949900617 },
+{ nama: " ", blok: "12", no: "8", status: "Bukan Anggota", lat: -6.97692305665367, lng: 107.64699928329 },
+{ nama: " ", blok: "12", no: "10", status: "Bukan Anggota", lat: -6.97692895530702, lng: 107.647049156094 },
+{ nama: " ", blok: "12", no: "12", status: "Bukan Anggota", lat: -6.97693416507963, lng: 107.647099424599 },
+{ nama: " ", blok: "12", no: "16", status: "Bukan Anggota", lat: -6.97693920038375, lng: 107.647148097707 },
+{ nama: " ", blok: "12", no: "18", status: "Bukan Anggota", lat: -6.97694462059769, lng: 107.647197868887 },
+{ nama: " ", blok: "12", no: "20", status: "Bukan Anggota", lat: -6.97694990681271, lng: 107.64724742333 },
+{ nama: " ", blok: "12", no: "26", status: "Bukan Anggota", lat: -6.97695500057279, lng: 107.647296527213 },
+{ nama: " ", blok: "12", no: "28", status: "Bukan Anggota", lat: -6.97696041629013, lng: 107.647345879309 },
+{ nama: " ", blok: "12", no: "30", status: "Bukan Anggota", lat: -6.97696610630072, lng: 107.647396415812 },
+{ nama: " ", blok: "15", no: "5", status: "Bukan Anggota", lat: -6.97682621675648, lng: 107.647009948351 },
+{ nama: " ", blok: "15", no: "25", status: "Bukan Anggota", lat: -6.97687525139168, lng: 107.647467609742 },
+{ nama: " ", blok: "15", no: "7", status: "Bukan Anggota", lat: -6.97683192475347, lng: 107.647059982133 },
+{ nama: " ", blok: "15", no: "9", status: "Bukan Anggota", lat: -6.97683710125119, lng: 107.647109456536 },
+{ nama: " ", blok: "15", no: "11", status: "Bukan Anggota", lat: -6.97684220580311, lng: 107.647158173711 },
+{ nama: " ", blok: "16", no: "6", status: "Bukan Anggota", lat: -6.97637531826626, lng: 107.647010031088 },
+{ nama: " ", blok: "17", no: "2", status: "Bukan Anggota", lat: -6.97625648814636, lng: 107.647024267356 },
+{ nama: " ", blok: "17", no: "3", status: "Bukan Anggota", lat: -6.97626301722443, lng: 107.647078506368 },
+{ nama: " ", blok: "10", no: "27", status: "Bukan Anggota", lat: -6.97705623545687, lng: 107.646515748403 },
+{ nama: " ", blok: "10", no: "28", status: "Bukan Anggota", lat: -6.97711611411734, lng: 107.64650853584 },
+{ nama: " ", blok: "10", no: "20", status: "Bukan Anggota", lat: -6.97724224583294, lng: 107.646755343085 },
+{ nama: " ", blok: "10", no: "23", status: "Bukan Anggota", lat: -6.97712446162456, lng: 107.646813961795 },
+{ nama: " ", blok: "10", no: "18", status: "Bukan Anggota", lat: -6.97735493807988, lng: 107.646698963686 },
+{ nama: " ", blok: "10", no: "17", status: "Bukan Anggota", lat: -6.97741034441179, lng: 107.646669730324 },
+{ nama: " ", blok: "10", no: "15", status: "Bukan Anggota", lat: -6.97752309601401, lng: 107.646615504802 },
+{ nama: " ", blok: "10", no: "11", status: "Bukan Anggota", lat: -6.97764770607671, lng: 107.646554422848 },
+{ nama: " ", blok: "18", no: "1", status: "Bukan Anggota", lat: -6.97609436016654, lng: 107.647064791707 },
+{ nama: " ", blok: "12", no: "1", status: "Bukan Anggota", lat: -6.97709193044818, lng: 107.646976523248 },
+{ nama: " ", blok: "12", no: "3", status: "Bukan Anggota", lat: -6.97709900451542, lng: 107.647030644449 },
+{ nama: " ", blok: "12", no: "5", status: "Bukan Anggota", lat: -6.97710450117177, lng: 107.647080489373 },
+{ nama: " ", blok: "12", no: "7", status: "Bukan Anggota", lat: -6.97711080991587, lng: 107.647129859456 },
+{ nama: " ", blok: "12", no: "9", status: "Bukan Anggota", lat: -6.97711796222416, lng: 107.647178153049 },
+{ nama: " ", blok: "12", no: "17", status: "Bukan Anggota", lat: -6.97713602690607, lng: 107.647329354266 },
+{ nama: " ", blok: "19", no: "5", status: "Bukan Anggota", lat: -6.976002406286, lng: 107.647424635638 },
+{ nama: " ", blok: "11", no: "9", status: "Bukan Anggota", lat: -6.97672242599913, lng: 107.646231435832 },
+{ nama: " ", blok: "11", no: "5", status: "Bukan Anggota", lat: -6.9767098282959, lng: 107.646102731156 },
+{ nama: " ", blok: "2", no: "36", status: "Bukan Anggota", lat: -6.97666308423391, lng: 107.645788608757 },
+{ nama: " ", blok: "2", no: "35", status: "Bukan Anggota", lat: -6.97672469768662, lng: 107.645760620057 },
+{ nama: " ", blok: "2", no: "33", status: "Bukan Anggota", lat: -6.97678401337146, lng: 107.645731622317 },
+{ nama: " ", blok: "2", no: "32", status: "Bukan Anggota", lat: -6.97683969399662, lng: 107.645705738929 },
+{ nama: " ", blok: "2", no: "38", status: "Bukan Anggota", lat: -6.97694208450957, lng: 107.645865876709 },
+{ nama: " ", blok: "2", no: "30", status: "Bukan Anggota", lat: -6.97689298332449, lng: 107.645679001185 },
+{ nama: " ", blok: "2", no: "29", status: "Bukan Anggota", lat: -6.97694941128623, lng: 107.645648167929 },
+{ nama: " ", blok: "2", no: "50", status: "Bukan Anggota", lat: -6.97707476868555, lng: 107.64582633172 },
+{ nama: " ", blok: "2", no: "28", status: "Bukan Anggota", lat: -6.97700945901926, lng: 107.645624343089 },
+{ nama: " ", blok: "2", no: "26", status: "Bukan Anggota", lat: -6.97713636235318, lng: 107.645561687322 },
+{ nama: " ", blok: "8", no: "3", status: "Bukan Anggota", lat: -6.97717135947062, lng: 107.645818236023 },
+{ nama: " ", blok: "10", no: "21", status: "Bukan Anggota", lat: -6.97718388612742, lng: 107.646782018775 },
+{ nama: " ", blok: "10", no: "16", status: "Bukan Anggota", lat: -6.97746889027701, lng: 107.646645311932 },
+{ nama: " ", blok: "8", no: "1", status: "Bukan Anggota", lat: -6.97716284918607, lng: 107.645750741903 },
+{ nama: " ", blok: "6", no: "2", status: "Bukan Anggota", lat: -6.97786924686818, lng: 107.64537170554 },
+{ nama: " ", blok: "10", no: "7", status: "Bukan Anggota", lat: -6.97820176400018, lng: 107.646171779304 },
+{ nama: " ", blok: "10", no: "9", status: "Bukan Anggota", lat: -6.97807213032451, lng: 107.646213340573 },
+{ nama: " ", blok: "10", no: "10", status: "Bukan Anggota", lat: -6.97800810219212, lng: 107.646235385655 },
+{ nama: " ", blok: "5", no: "15", status: "Bukan Anggota", lat: -6.97814443941428, lng: 107.645668087912 },
+{ nama: " ", blok: "16", no: "2", status: "Bukan Anggota", lat: -6.97636891419398, lng: 107.646950259447 },
+{ nama: " ", blok: "16", no: "25", status: "Bukan Anggota", lat: -6.97660793510806, lng: 107.647498147122 },
+{ nama: " ", blok: "15", no: "8", status: "Bukan Anggota", lat: -6.97666199605425, lng: 107.647025404099 },
+{ nama: " ", blok: "16", no: "5", status: "Bukan Anggota", lat: -6.97655784107144, lng: 107.647039286934 },
+{ nama: " ", blok: "15", no: "10", status: "Bukan Anggota", lat: -6.97666831379161, lng: 107.647076554839 },
+{ nama: " ", blok: "16", no: "7", status: "Bukan Anggota", lat: -6.9765637046512, lng: 107.647089563533 },
+{ nama: " ", blok: "15", no: "18", status: "Bukan Anggota", lat: -6.9766837056884, lng: 107.647225703803 },
+{ nama: " ", blok: "15", no: "20", status: "Bukan Anggota", lat: -6.97668963312003, lng: 107.647274905712 },
+{ nama: " ", blok: "15", no: "26", status: "Bukan Anggota", lat: -6.97669459917637, lng: 107.647323906173 },
+{ nama: " ", blok: "16", no: "19", status: "Bukan Anggota", lat: -6.9765903065973, lng: 107.647336630681 },
+{ nama: " ", blok: "15", no: "28", status: "Bukan Anggota", lat: -6.97670083057881, lng: 107.647374713372 },
+{ nama: " ", blok: "16", no: "21", status: "Bukan Anggota", lat: -6.97659610992247, lng: 107.647386546652 },
+{ nama: " ", blok: "15", no: "30", status: "Bukan Anggota", lat: -6.97670583890329, lng: 107.64742581375 },
+{ nama: " ", blok: "16", no: "23", status: "Bukan Anggota", lat: -6.9766012621385, lng: 107.647436449133 },
+{ nama: " ", blok: "16", no: "8", status: "Bukan Anggota", lat: -6.97638168007046, lng: 107.647062960687 },
+{ nama: " ", blok: "16", no: "38", status: "Bukan Anggota", lat: -6.9764442477038, lng: 107.647607602709 },
+{ nama: " ", blok: "16", no: "28", status: "Bukan Anggota", lat: -6.97641997050516, lng: 107.647405536736 },
+{ nama: " ", blok: "16", no: "26", status: "Bukan Anggota", lat: -6.97641712235225, lng: 107.647355306003 },
+{ nama: " ", blok: "16", no: "18", status: "Bukan Anggota", lat: -6.97640301558664, lng: 107.647257096438 },
+{ nama: " ", blok: "16", no: "16", status: "Bukan Anggota", lat: -6.97639889579239, lng: 107.647206755987 },
+{ nama: " ", blok: "16", no: "10", status: "Bukan Anggota", lat: -6.9763885275085, lng: 107.647111176939 },
+{ nama: " ", blok: "17", no: "7", status: "Bukan Anggota", lat: -6.97628247765419, lng: 107.647242147008 },
+{ nama: " ", blok: "1A", no: "5", status: "Bukan Anggota", lat: -6.97884796286314, lng: 107.64507669913 },
+{ nama: " ", blok: "1A", no: "2", status: "Bukan Anggota", lat: -6.9787929099648, lng: 107.644965467382 },
+{ nama: " ", blok: "1A", no: "16", status: "Bukan Anggota", lat: -6.97915439875646, lng: 107.645689913559 },
+{ nama: " ", blok: "10", no: "5", status: "Bukan Anggota", lat: -6.97884792778962, lng: 107.645952897808 },
+{ nama: " ", blok: "3", no: "21", status: "Bukan Anggota", lat: -6.97849659324316, lng: 107.645701997749 },
+{ nama: " ", blok: "3", no: "19", status: "Bukan Anggota", lat: -6.97846683018003, lng: 107.645643915035 },
+{ nama: " ", blok: "3", no: "17", status: "Bukan Anggota", lat: -6.97843893231084, lng: 107.645587507757 },
+{ nama: " ", blok: "3", no: "15", status: "Bukan Anggota", lat: -6.97841060456568, lng: 107.645530779422 },
+{ nama: " ", blok: "3", no: "11", status: "Bukan Anggota", lat: -6.97838116705719, lng: 107.645474907241 },
+{ nama: " ", blok: "3", no: "9", status: "Bukan Anggota", lat: -6.97835414692628, lng: 107.645418924444 },
+{ nama: " ", blok: "3", no: "5", status: "Bukan Anggota", lat: -6.97829656243636, lng: 107.645305426404 },
+{ nama: " ", blok: "1A", no: "3", status: "Bukan Anggota", lat: -6.97882071610314, lng: 107.645021439388 },
+{ nama: " ", blok: "1", no: "27", status: "Bukan Anggota", lat: -6.97871804949835, lng: 107.645071701598 },
+
+
+];
+
+// ─── Marker factory ───────────────────────────────────────
+function makeIcon(status) {
+  const isAnggota = status === 'Anggota';
+  const color     = isAnggota ? '#2ECC71' : '#F1C40F';
+  const glow      = isAnggota ? 'rgba(122,158,142,.35)' : 'rgba(192,107,74,.35)';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 32 40">
+    <defs>
+      <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="${glow}"/></filter>
+    </defs>
+    <path filter="url(#s)" d="M16 2C9.4 2 4 7.4 4 14c0 9 12 24 12 24S28 23 28 14C28 7.4 22.6 2 16 2z" fill="${color}"/>
+    <circle cx="16" cy="14" r="5.5" fill="white" fill-opacity=".9"/>
+  </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize:   [48, 40],
+    iconAnchor: [16, 40],
+    popupAnchor:[0, -42],
+  });
+}
+
+function makePopup(d) {
+  const isAnggota = d.status === 'Anggota';
+  const cls  = isAnggota ? 'anggota' : 'bukan';
+  const badge = isAnggota ? '✓ Anggota' : '✗ Bukan Anggota';
+  return `
+  <div class="popup-card">
+    <div class="popup-header ${cls}">
+      <div class="popup-type-badge">${badge}</div>
+      <div class="popup-name">${d.nama}</div>
+    </div>
+    <div class="popup-body">
+      <div class="popup-row">
+        <span class="popup-icon">🏠</span>
+        <div><span class="popup-field">Blok</span><span class="popup-value">${d.blok} / No. ${d.no}</span></div>
+      </div>
+      <div class="popup-row">
+        <span class="popup-icon">👤</span>
+        <div><span class="popup-field">Status</span><span class="popup-value">${d.status}</span></div>
+      </div>
+      <div class="popup-divider"></div>
+      <div class="popup-coords">
+        <span class="popup-coords-badge">${d.lat.toFixed(5)}</span>
+        <span style="color:var(--taupe)">·</span>
+        <span class="popup-coords-badge">${d.lng.toFixed(5)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── Cluster groups ───────────────────────────────────────
+function customCluster(color, glowColor) {
+  return L.markerClusterGroup({
+    maxClusterRadius: 60,
+    iconCreateFunction(cluster) {
+      const n = cluster.getChildCount();
+      const cls = n < 10 ? 'small' : n < 30 ? 'medium' : 'large';
+      return L.divIcon({
+        html: `<div class="cluster-inner ${cls}" style="background:${color}">${n}</div>`,
+        className: 'cluster-custom',
+        iconSize: n < 30 ? [44,44] : [52,52],
+        iconAnchor: n < 30 ? [22,22] : [26,26],
+      });
+    },
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true,
+  });
+}
+
+const clusterAnggota = customCluster('#2ECC71', 'rgba(46,204,113,.3)');
+const clusterBukan   = customCluster('#F1C40F', 'rgba(241,196,15,.3)');
+
+let allMarkers = [];
+
+wardaData.forEach(d => {
+  const m = L.marker([d.lat, d.lng], { icon: makeIcon(d.status) })
+    .bindPopup(makePopup(d), { maxWidth: 280 });
+  m._data = d;
+  allMarkers.push(m);
+  if (d.status === 'Anggota') clusterAnggota.addLayer(m);
+  else                        clusterBukan.addLayer(m);
+});
+
+map.addLayer(clusterAnggota);
+map.addLayer(clusterBukan);
+
+// Cluster off by default — show individual markers instead
+map.removeLayer(clusterAnggota);
+map.removeLayer(clusterBukan);
+allMarkers.forEach(m => map.addLayer(m));
+
+// ─── Stats ────────────────────────────────────────────────
+const nAnggota = wardaData.filter(d => d.status === 'Anggota').length;
+const nBukan   = wardaData.filter(d => d.status !== 'Anggota').length;
+const nTotal   = wardaData.length;
+const pct      = Math.round(nAnggota / nTotal * 100);
+
+document.getElementById('stat-total').textContent   = nTotal;
+document.getElementById('stat-anggota').textContent = nAnggota;
+document.getElementById('stat-bukan').textContent   = nBukan;
+document.getElementById('stat-pct').textContent     = pct + '%';
+document.getElementById('cnt-anggota').textContent  = nAnggota;
+document.getElementById('cnt-bukan').textContent    = nBukan;
+
+// Fit map to data
+if (wardaData.length) {
+  const bounds = L.latLngBounds(wardaData.map(d => [d.lat, d.lng]));
+
+}
+
+// ─── Layer toggles ────────────────────────────────────────
+const layerState = { anggota: true, bukan: true, cluster: false };
+
+function toggleLayer(which) {
+  const item = document.getElementById(`leg-${which}`);
+  const grp  = which === 'anggota' ? clusterAnggota : clusterBukan;
+  const statusVal = which === 'anggota' ? 'Anggota' : 'Bukan Anggota';
+  layerState[which] = !layerState[which];
+  if (layerState[which]) {
+    if (clusterOn) { map.addLayer(grp); }
+    else { allMarkers.filter(m => m._data.status === statusVal).forEach(m => map.addLayer(m)); }
+    item.classList.add('active');
+  } else {
+    if (clusterOn) { map.removeLayer(grp); }
+    else { allMarkers.filter(m => m._data.status === statusVal).forEach(m => map.removeLayer(m)); }
+    item.classList.remove('active');
+  }
+  showToast(layerState[which] ? `Layer ${which} ditampilkan` : `Layer ${which} disembunyikan`);
+}
+
+function toggleBasemap(which) {
+  if (currentBase === which) return;
+  if (which === 'osm') {
+    map.removeLayer(satelliteLayer); map.addLayer(osmLayer);
+    document.getElementById('sw-osm').classList.remove('off');
+    document.getElementById('sw-satellite').classList.add('off');
+  } else {
+    map.removeLayer(osmLayer); map.addLayer(satelliteLayer);
+    document.getElementById('sw-satellite').classList.remove('off');
+    document.getElementById('sw-osm').classList.add('off');
+  }
+  currentBase = which;
+}
+
+function toggleCluster() {
+  clusterOn = !clusterOn;
+  const sw = document.getElementById('sw-cluster');
+  sw.classList.toggle('off', !clusterOn);
+
+  if (clusterOn) {
+    // Remove individual markers, add cluster groups (respecting layer visibility)
+    allMarkers.forEach(m => map.removeLayer(m));
+    if (layerState.anggota) map.addLayer(clusterAnggota);
+    if (layerState.bukan)   map.addLayer(clusterBukan);
+  } else {
+    // Remove cluster groups, add individual markers (respecting layer visibility)
+    map.removeLayer(clusterAnggota);
+    map.removeLayer(clusterBukan);
+    allMarkers.forEach(m => {
+      const vis = m._data.status === 'Anggota' ? layerState.anggota : layerState.bukan;
+      if (vis) map.addLayer(m);
+    });
+  }
+  showToast(clusterOn ? 'Cluster aktif' : 'Cluster nonaktif');
+}
+
+// ─── Search ───────────────────────────────────────────────
+function filterMarkers() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  allMarkers.forEach(m => {
+    const d = m._data;
+    const match = !q || d.nama.toLowerCase().includes(q) || d.blok.toLowerCase().includes(q);
+    const vis = d.status === 'Anggota' ? layerState.anggota : layerState.bukan;
+    if (clusterOn) {
+      const grp = d.status === 'Anggota' ? clusterAnggota : clusterBukan;
+      if (match && vis) grp.addLayer(m); else grp.removeLayer(m);
+    } else {
+      if (match && vis) map.addLayer(m); else map.removeLayer(m);
+    }
+  });
+  if (q) {
+    const hits = allMarkers.filter(m => m._data.nama.toLowerCase().includes(q));
+    if (hits.length === 1) {
+      const d = hits[0]._data;
+      map.setView([d.lat, d.lng], 18);
+      hits[0].openPopup();
+    }
+    showToast(`${hits.length} warga ditemukan`);
+  }
+}
+
+// ─── Toast ────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+
+</body>
+</html>
