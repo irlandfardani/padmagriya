@@ -352,6 +352,50 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ─── Label Toggle Button ────────────────────────────────── */
+    .label-toggle-btn {
+      position: absolute;
+      bottom: 36px;
+      right: 10px;
+      z-index: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: white;
+      border: 1.5px solid var(--sand);
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-mid);
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .label-toggle-btn:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--taupe);
+      transform: translateY(-1px);
+    }
+    .label-toggle-btn.active {
+      background: var(--rust);
+      border-color: var(--rust);
+      color: white;
+      box-shadow: 0 4px 12px rgba(192,107,74,.35);
+    }
+    .label-toggle-icon { font-size: 14px; }
+
+    @media (max-width: 600px) {
+      .label-toggle-btn {
+        bottom: 96px;
+        right: 72px;
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+    }
+
     /* ─── Basemap Picker ─────────────────────────────────────── */
     .basemap-grid {
       display: grid;
@@ -707,6 +751,12 @@
       <input type="text" id="searchInput" placeholder="Cari nama warga..." oninput="filterMarkers()" />
     </div>
 
+    <!-- Label No. Rumah Toggle Button -->
+    <button class="label-toggle-btn" id="labelToggleBtn" onclick="toggleLabelMode()" title="Tampilkan/sembunyikan No. Rumah">
+      <span class="label-toggle-icon">🏷</span>
+      <span class="label-toggle-text">No. Rumah</span>
+    </button>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
   </div>
@@ -812,7 +862,7 @@
 <script>
 // ─── Map init ─────────────────────────────────────────────
 const map = L.map('map', {
-  center: [-6.97868, 107.64540],   // centroid Padmagriya
+  center: [-6.97814, 107.64567],   // centroid Padmagriya
   zoom: 20,
   zoomControl: true,
   attributionControl: true,
@@ -877,7 +927,7 @@ const basemaps = {
   },
 };
 
-// Start with satellite
+// Start with Carto Light
 basemaps.cartoLight.layer.addTo(map);
 let currentBase = 'cartoLight';
 let clusterOn = false;
@@ -1232,7 +1282,7 @@ const wardaData = [
 ];
 
 // ─── Marker factory ───────────────────────────────────────
-function makeIcon(status) {
+function makeIcon(status, label) {
   const isAnggota = status === 'Anggota';
   const color     = isAnggota ? '#2ECC71' : '#F1C40F';
   const glow      = isAnggota ? 'rgba(122,158,142,.35)' : 'rgba(192,107,74,.35)';
@@ -1243,14 +1293,38 @@ function makeIcon(status) {
     <path filter="url(#s)" d="M16 2C9.4 2 4 7.4 4 14c0 9 12 24 12 24S28 23 28 14C28 7.4 22.6 2 16 2z" fill="${color}"/>
     <circle cx="16" cy="14" r="5.5" fill="white" fill-opacity=".9"/>
   </svg>`;
+
+  const labelHtml = label
+    ? `<div style="
+        position:absolute;
+        top:-20px;
+        left:50%;
+        transform:translateX(-50%);
+        background:rgba(255,255,255,0.92);
+        color:#5C4E45;
+        font-size:10px;
+        font-weight:600;
+        font-family:'DM Sans',sans-serif;
+        padding:2px 7px;
+        border-radius:10px;
+        white-space:nowrap;
+        pointer-events:none;
+        letter-spacing:.2px;
+        border:1px solid rgba(201,185,154,0.6);
+        box-shadow:0 1px 6px rgba(45,36,32,.15);
+        backdrop-filter:blur(4px);
+      ">${label}</div>`
+    : '';
+
   return L.divIcon({
-    html: svg,
+    html: `<div style="position:relative;display:inline-block;">${labelHtml}${svg}</div>`,
     className: '',
     iconSize:   [48, 40],
     iconAnchor: [16, 40],
     popupAnchor:[0, -42],
   });
 }
+
 
 function makePopup(d) {
   const isAnggota = d.status === 'Anggota';
@@ -1322,6 +1396,29 @@ map.addLayer(clusterBukan);
 map.removeLayer(clusterAnggota);
 map.removeLayer(clusterBukan);
 allMarkers.forEach(m => map.addLayer(m));
+
+// ─── Zoom-based house number labels ──────────────────────────
+let labelMode = false; // default: label tidak muncul
+
+function updateMarkerLabels() {
+  const zoom = map.getZoom();
+  const showLabel = labelMode && zoom >= 19;
+  allMarkers.forEach(m => {
+    const d = m._data;
+    m.setIcon(makeIcon(d.status, showLabel ? `${d.no}` : null));
+  });
+}
+
+function toggleLabelMode() {
+  labelMode = !labelMode;
+  const btn = document.getElementById('labelToggleBtn');
+  btn.classList.toggle('active', labelMode);
+  updateMarkerLabels();
+  showToast(labelMode ? 'Label No. Rumah aktif (zoom 19+)' : 'Label No. Rumah disembunyikan');
+}
+
+map.on('zoomend', updateMarkerLabels);
+
 
 // ─── Stats ────────────────────────────────────────────────
 const nAnggota = wardaData.filter(d => d.status === 'Anggota').length;
