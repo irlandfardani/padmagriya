@@ -352,15 +352,202 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ─── Responsive ─────────────────────────────────────── */
-    @media (max-width: 768px) {
+    /* ─── Mobile FAB: Hamburger Button ──────────────────────── */
+    .fab-menu {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 16px;
+      z-index: 1200;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--rust), var(--warm-brown));
+      color: white;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(192,107,74,.5);
+      align-items: center; justify-content: center;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .fab-menu:active { transform: scale(.93); }
+
+    /* ─── Mobile FAB: Search Button ─────────────────────────── */
+    .fab-search {
+      display: none;
+      position: fixed;
+      bottom: 88px;
+      right: 16px;
+      z-index: 1200;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: white;
+      color: var(--text-mid);
+      border: 1.5px solid var(--sand);
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      align-items: center; justify-content: center;
+      transition: transform .2s;
+    }
+    .fab-search:active { transform: scale(.93); }
+
+    /* ─── Mobile Search Overlay ──────────────────────────────── */
+    .mobile-search-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1300;
+      background: white;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--sand);
+      box-shadow: var(--shadow-md);
+      align-items: center;
+      gap: 10px;
+      animation: slideDown .2s ease;
+    }
+    .mobile-search-overlay.open { display: flex; }
+    .mobile-search-overlay input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1.5px solid var(--taupe);
+      border-radius: 20px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text-dark);
+      outline: none;
+      background: var(--cream);
+    }
+    .mobile-search-close {
+      background: none; border: none;
+      font-size: 22px; color: var(--text-light);
+      cursor: pointer; padding: 4px; line-height: 1;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+
+    /* ─── Drawer Overlay (backdrop) ──────────────────────────── */
+    .drawer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(45,36,32,.4);
+      z-index: 1100;
+      backdrop-filter: blur(2px);
+      animation: fadeIn .2s ease;
+    }
+    .drawer-overlay.open { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* ─── Bottom Sheet Drawer ────────────────────────────────── */
+    .bottom-drawer {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 1150;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -8px 40px rgba(45,36,32,.2);
+      max-height: 80vh;
+      overflow: hidden;
+      flex-direction: column;
+      animation: slideUp .3s cubic-bezier(.25,.8,.25,1);
+    }
+    .bottom-drawer.open { display: flex; }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0);    }
+    }
+
+    .drawer-handle-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 10px 0 4px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .drawer-handle-bar {
+      width: 36px; height: 4px;
+      border-radius: 2px;
+      background: var(--taupe);
+    }
+    .drawer-header {
+      padding: 4px 20px 14px;
+      border-bottom: 1px solid var(--sand);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      color: var(--text-dark);
+    }
+    .drawer-close {
+      background: none; border: none;
+      font-size: 20px; color: var(--text-light);
+      cursor: pointer; padding: 2px;
+    }
+    .drawer-content {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 24px;
+    }
+    .drawer-content::-webkit-scrollbar { display: none; }
+
+    /* ─── Tablet (601px – 900px) ─────────────────────────────── */
+    @media (min-width: 601px) and (max-width: 900px) {
+      .app { grid-template-columns: 240px 1fr; }
+      .header { padding: 0 16px; }
+      .header-title { font-size: 15px; }
+      .header-subtitle { font-size: 10px; }
+      .header-pill { padding: 4px 9px; font-size: 11px; }
+      .sidebar-section { padding: 14px; }
+      .stat-num { font-size: 22px; }
+      .map-search input { width: 180px; }
+      .map-search input:focus { width: 220px; }
+    }
+
+    /* ─── Mobile (≤ 600px) ───────────────────────────────────── */
+    @media (max-width: 600px) {
       .app {
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto;
-        grid-template-areas: "header" "map" "sidebar";
+        grid-template-rows: auto 1fr;
+        grid-template-areas: "header" "map";
       }
-      .sidebar { max-height: 240px; border-right: none; border-top: 1.5px solid var(--sand); }
+      .sidebar   { display: none; }
       .map-search { display: none; }
+
+      .header { padding: 0 14px; height: 52px; }
+      .header-title { font-size: 14px; }
+      .header-subtitle { display: none; }
+      .header-badge { width: 30px; height: 30px; font-size: 14px; }
+      .header-right { gap: 6px; }
+      .header-pill { padding: 4px 8px; font-size: 10px; gap: 4px; }
+      .header-pill:last-child { display: none; }
+
+      .fab-menu   { display: flex; }
+      .fab-search { display: flex; }
+
+      .map-controls { top: 12px; right: 12px; }
+      .map-btn { width: 32px; height: 32px; font-size: 14px; }
+
+      .toast { bottom: 96px; font-size: 11px; }
+
+      .leaflet-popup-content-wrapper { min-width: 200px; }
+      .popup-name { font-size: 15px; }
+    }
+
+    /* ─── Very small (≤ 380px) ───────────────────────────────── */
+    @media (max-width: 380px) {
+      .header-pill:nth-child(2) { display: none; }
+      .header-title { font-size: 13px; }
     }
   </style>
 </head>
@@ -493,9 +680,104 @@
     <div class="toast" id="toast"></div>
   </div>
 
-</div>
+  <!-- ── Mobile: Search Overlay ── -->
+  <div class="mobile-search-overlay" id="mobileSearchOverlay">
+    <input type="text" id="mobileSearchInput" placeholder="Cari nama atau blok..." oninput="filterMarkersMobile()" />
+    <button class="mobile-search-close" onclick="closeMobileSearch()">✕</button>
+  </div>
 
-<!-- Leaflet JS -->
+  <!-- ── Mobile: Drawer Overlay (backdrop) ── -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+  <!-- ── Mobile: Bottom Sheet Drawer ── -->
+  <div class="bottom-drawer" id="bottomDrawer">
+    <div class="drawer-handle-wrap" onclick="closeDrawer()">
+      <div class="drawer-handle-bar"></div>
+    </div>
+    <div class="drawer-header">
+      <div class="drawer-title">🏘 Panel Informasi</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-content">
+
+      <!-- Stats -->
+      <div class="sidebar-section">
+        <div class="section-label">Statistik Warga</div>
+        <div class="stat-grid">
+          <div class="stat-card accent">
+            <div class="stat-num" id="d-stat-total">—</div>
+            <div class="stat-label">Total Warga</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="d-stat-anggota">—</div>
+            <div class="stat-label">Anggota</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="d-stat-bukan">—</div>
+            <div class="stat-label">Bukan Anggota</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="d-stat-pct">—</div>
+            <div class="stat-label">% Anggota</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="sidebar-section">
+        <div class="section-label">Kategori</div>
+        <div class="legend-item active" id="d-leg-anggota" onclick="toggleLayer('anggota'); syncDrawerLegend();">
+          <div class="legend-icon anggota" style="color:#2ECC71">●</div>
+          <div class="legend-text">
+            <div class="legend-name">Anggota</div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:2px">Terdaftar sebagai anggota</div>
+          </div>
+          <div class="legend-count" id="d-cnt-anggota">—</div>
+        </div>
+        <div class="legend-item active" id="d-leg-bukan" onclick="toggleLayer('bukan'); syncDrawerLegend();">
+          <div class="legend-icon bukan" style="color:#F1C40F">●</div>
+          <div class="legend-text">
+            <div class="legend-name">Bukan Anggota</div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:2px">Belum terdaftar</div>
+          </div>
+          <div class="legend-count" id="d-cnt-bukan">—</div>
+        </div>
+      </div>
+
+      <!-- Layers -->
+      <div class="sidebar-section">
+        <div class="section-label">Layer Peta</div>
+        <div class="layer-toggle" onclick="toggleBasemap('osm')">
+          <div class="layer-toggle-left"><span class="layer-icon">🗺</span><span>OpenStreetMap</span></div>
+          <div class="toggle-switch off" id="d-sw-osm"></div>
+        </div>
+        <div class="layer-toggle" onclick="toggleBasemap('satellite')">
+          <div class="layer-toggle-left"><span class="layer-icon">🛰</span><span>Satellite</span></div>
+          <div class="toggle-switch" id="d-sw-satellite"></div>
+        </div>
+        <div class="layer-toggle" onclick="toggleCluster()">
+          <div class="layer-toggle-left"><span class="layer-icon">📍</span><span>Cluster Markers</span></div>
+          <div class="toggle-switch off" id="d-sw-cluster"></div>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="sidebar-section">
+        <div class="section-label">Informasi</div>
+        <div class="info-box">
+          Peta ini menampilkan sebaran warga Perumahan <strong>Padmagriya</strong> berdasarkan status keanggotaan. Klik marker untuk melihat detail warga.<br/><br/>
+          Data diperbarui secara berkala oleh pengurus perumahan.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Mobile: FAB Buttons ── -->
+  <button class="fab-search" onclick="openMobileSearch()" title="Cari warga">🔍</button>
+  <button class="fab-menu"   onclick="openDrawer()"       title="Panel Info">☰</button>
+
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Leaflet MarkerCluster JS -->
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -1052,6 +1334,73 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── Mobile: Drawer ───────────────────────────────────────
+function openDrawer() {
+  document.getElementById('bottomDrawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Sync stats into drawer
+  document.getElementById('d-stat-total').textContent   = document.getElementById('stat-total').textContent;
+  document.getElementById('d-stat-anggota').textContent = document.getElementById('stat-anggota').textContent;
+  document.getElementById('d-stat-bukan').textContent   = document.getElementById('stat-bukan').textContent;
+  document.getElementById('d-stat-pct').textContent     = document.getElementById('stat-pct').textContent;
+  document.getElementById('d-cnt-anggota').textContent  = document.getElementById('cnt-anggota').textContent;
+  document.getElementById('d-cnt-bukan').textContent    = document.getElementById('cnt-bukan').textContent;
+  syncDrawerLegend();
+  syncDrawerToggles();
+}
+
+function closeDrawer() {
+  document.getElementById('bottomDrawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function syncDrawerLegend() {
+  ['anggota','bukan'].forEach(w => {
+    const desktop = document.getElementById(`leg-${w}`);
+    const drawer  = document.getElementById(`d-leg-${w}`);
+    if (!desktop || !drawer) return;
+    if (desktop.classList.contains('active')) drawer.classList.add('active');
+    else drawer.classList.remove('active');
+  });
+}
+
+function syncDrawerToggles() {
+  ['osm','satellite','cluster'].forEach(id => {
+    const src  = document.getElementById(`sw-${id}`);
+    const dest = document.getElementById(`d-sw-${id}`);
+    if (!src || !dest) return;
+    dest.className = src.className;
+  });
+}
+
+// ─── Mobile: Search ───────────────────────────────────────
+function openMobileSearch() {
+  document.getElementById('mobileSearchOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('mobileSearchInput').focus(), 50);
+}
+
+function closeMobileSearch() {
+  document.getElementById('mobileSearchOverlay').classList.remove('open');
+  document.getElementById('mobileSearchInput').value = '';
+  filterMarkers(); // reset filters
+}
+
+function filterMarkersMobile() {
+  // Mirror value to desktop search and reuse same filter logic
+  const mval = document.getElementById('mobileSearchInput').value;
+  document.getElementById('searchInput').value = mval;
+  filterMarkers();
+}
+
+// Keep drawer basemap toggles in sync with desktop
+const _origToggleBasemap = toggleBasemap;
+function toggleBasemap(which) {
+  _origToggleBasemap(which);
+  syncDrawerToggles();
 }
 </script>
 
